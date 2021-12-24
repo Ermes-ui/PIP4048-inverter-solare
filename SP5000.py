@@ -1,6 +1,6 @@
 import serial, time
 import struct, string
-import shutil	
+import shutil
 import os
 from ctypes import c_ubyte, c_ushort
 
@@ -19,7 +19,7 @@ def CalcoloCRC( str ):
 		da=c_ubyte((c_ubyte(crc>>8).value)>>4).value
 		crc = c_ushort(crc << 4).value
 		crc = c_ushort(crc ^ crc_ta[da^c_ubyte(c_ubyte(ord(Calcolo[idx])).value >> 4).value]).value
-		da = (c_ubyte(crc>>8).value) >> 4 
+		da = (c_ubyte(crc>>8).value) >> 4
 		crc <<= 4
 		crc = c_ushort(crc ^ crc_ta[ da ^ ( ord(Calcolo[idx]) & 0x0f )]).value
 
@@ -51,7 +51,7 @@ class Inverter:
 		self.ser.dsrdtr = False                 #disable hardware (DSR/DTR) flow control
 		self.ser.writeTimeout = 2               #timeout for write
 
-		try: 
+		try:
 		    self.ser.open()
 
 		except Exception, e:
@@ -61,7 +61,7 @@ class Inverter:
 		if self.ser.isOpen():
 			try:
 				self.ser.flushInput()   #flush input buffer, discarding all its contents
-				self.ser.flushOutput()  #flush output buffer, aborting current output 
+				self.ser.flushOutput()  #flush output buffer, aborting current output
 							#and discard all that is in buffer
 			except Exception, e1:
 				print "error communicating...: " + str(e1)
@@ -126,25 +126,6 @@ class Inverter:
  		self.OverTemp = CMD[9:10]
  		self.BatteryVoltHigh = CMD[10:11]
 		self.BatteryVoltLow = CMD[11:12]
-		# se esiste il file comandi_tx vengono processate tutte le linee ed il file cancellato
-		if os.path.exists("/etc/zabbix/externalscripts/comandi_tx"):
-			try: 
-				with open('/etc/zabbix/externalscripts/comandi_tx',"r") as inFile:
-					for Line in inFile:
-						if Line == "":
-							break
-						CMD=self.QueryCMD(Line)
-						if (CMD == -1):
-							fl2 = open('/etc/zabbix/externalscripts/err.tx',"w")
-							fl2.write(Line)
-							fl2.close() 
-						fl = open('/etc/zabbix/externalscripts/log.tx',"w")
-						fl.write(Line)
-						fl.close()					
-						os.remove('/etc/zabbix/externalscripts/comandi_tx')
-			except:
-				return 0        
-		#fine modifica
 		return 0
 
 #####################################################################
@@ -153,16 +134,14 @@ class Inverter:
 #####################################################################
 
 
-sp5000 = Inverter("/dev/ttyAMA0")	
+sp5000 = Inverter("/dev/ttyUSB0")
 while True:
-	lock_file = open("/tmp/SERIALLOCK","w")
-	lock_file.write("1")	
 	if (sp5000.Update() == 0):
 		out_file = open("/tmp/sp5000out_B","w")
 		out_file.write("grid_voltage:"+str(sp5000.grid_voltage)+"\n")
 		out_file.write("grid_frequency:"+str(sp5000.grid_frequency)+"\n")
 		out_file.write("ac_output_voltage:"+str(sp5000.ac_output_voltage)+"\n")
-	        out_file.write("ac_output_frequency:"+str(sp5000.ac_output_frequency)+"\n")
+	    out_file.write("ac_output_frequency:"+str(sp5000.ac_output_frequency)+"\n")
 		out_file.write("ac_output_apparent_power:"+str(sp5000.ac_output_apparent_power)+"\n")
 		out_file.write("ac_output_active_power:"+str(sp5000.ac_output_active_power)+"\n")
 		out_file.write("output_load_percent:"+str(sp5000.output_load_percent)+"\n")
@@ -190,6 +169,6 @@ while True:
 		out_file.write("BatteryVoltLow:"+str(sp5000.BatteryVoltLow)+"\n")
 		out_file.close()
 		shutil.move("/tmp/sp5000out_B","/tmp/sp5000out")
-	lock_file.close()
-	os.remove("/tmp/SERIALLOCK")
-	time.sleep(3)
+        if os.path.exists("/etc/zabbix/externalscripts/comandi_tx"):
+		if (sp5000.Comandi() == 0):
+			os.remove('/etc/zabbix/externalscripts/comandi_tx')
