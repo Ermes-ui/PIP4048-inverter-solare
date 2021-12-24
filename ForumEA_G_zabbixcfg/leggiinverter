@@ -1,0 +1,9 @@
+#!/bin/bash
+cd /home/pi
+while true
+do
+  echo $(date)
+  echo Running SP5000 Daemon
+  /usr/bin/python2 /home/pi/sp5000.py
+  echo Died
+done

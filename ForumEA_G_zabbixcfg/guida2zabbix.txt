@@ -1,0 +1,332 @@
+inserisco una quida super veloce per chi non sa nulla di linux, e premetto che sono arrivato al risultato googlando ed adattando dove serve anche con comandi forse surpleflui ma che mi hanno permesso di arrivare ad un risultato.
+un rigraziamento a IZE ed altri utenti del forum di energiaalternativa
+ingredienti scheda sd da 16Gb samsung EVO sh1 (trovata a 8,5 euro su amazon) raspberry pi2 ed un adattatore rs232 (in cina su ebay a meno di 2 euro) da collegare ai pin I/O del raspberry.
+per funzionare si deve disabilitare la console.
+
+Formattazione sd con sd formatter 4.0
+Impostare in option format size adjustement ON
+
+Scaricare il file raspbian jessie
+Con Win32DiskImmager scrivere il file sulla sd
+Effettuare rimozione sicura al termine ed inserire sd in raspberry
+Collegare cavo rete ad un router adsl, tastiera, mouse e cavo hdmi allo schermo per prima configurazione
+partirà il terminale grafico , cliccare sul computer nero in alto per aprire una finestra terminale e dare i seguenti comandi:
+sudo raspi-config
+selezionare il menu advanced option e poi update
+selezionare il menu advanced option e poi Serial impostare su no per disabilitare console da seriale (se utiliziamo la rs232)
+selezionare il menu advanced option e poi SSH (verificare che sia enabled)
+expand file system
+change user password
+boot option console autologin per non far partire il server grafico e per accedere direttamente solo in locale anche senza passowrd al raspberry (tramite ssh la pw viene comunque richiesta)
+internationalization Options   change locale it_it.utf-8 ed impostare il default su it_IT.UTF-8
+overclock selezionare modest 800Mhz (Zabbix lavorerà meglio)
+uscire dal raspi-config e rispondere che vogliamo fare un reboot
+andiamo ora a leggere il nostro ip dato dal DHCP SERVER del router ADSL
+ifconfig
+nella seconda riga di eth0 troviamo il nostro indirizzo che andremo ad inserire nella sessione ssh di mobaterm o putty
+una volta collegati con ssh tramite mobaterm
+digitato utente pi e la password apparirà la linea di comando
+diamo i seguenti comandi: e per comodità possiamo usare il copia incolla da questo file di testo.
+(per il momento possiamo lasciare così l'indirizzo ip perchè anche se datto dal dhcp sarà persistente)
+sudo reboot
+sudo apt-get install apache2 php5 libapache2-mod-php5
+rispondere S
+controllare se si vede la pagina di apache dal browser indicanto l’indirizzo ip del raspberry.
+sudo systemctl stop serial-getty@ttyAMA0.service
+sudo -s
+apt-get update && apt-get upgrade
+rispondere S
+apt-get install mysql-server
+rispondere S
+quando richiesto inserire la password per mysqlserver ed annotarla
+apt-get install mysql-client
+apt-get install php5-mysql
+apt-get install zabbix-server-mysql zabbix-frontend-php 
+rispondere S
+???? inserire password di root per mysql
+apt-get install phpmyadmin
+rispondere S e poi selezionare apache2 con la barra spaziatrice poi premere tab e dare invio per OK
+
+Configurazione di PHP
+rispondere Si e mettere le password quando richiesto.
+
+Zabbix ha bisogno di apportare alcune modifiche alla configurazione di PHP. Modifichiamo quindi il file di configurazione:
+# nano /etc/php5/apache2/php.ini
+e cerchiamo:  (usando il ctrl W)
+post_max_size = 8M
+da sostituire con:
+post_max_size = 16M
+Cercate:
+max_execution_time = 30
+da sostituire con:
+max_execution_time = 300
+Cercate:
+max_input_time = 60
+da sostituire con:
+max_input_time = 300
+Cercate:
+;date.timezone =
+da sostituire con:
+date.timezone = "Europe/Rome"
+salvare con CTRL O
+uscire con CTRL X
+
+
+apt-get install python-mysqldb
+
+nano /boot/cmdline.txt
+
+eliminare la parte se presente  console=ttyAMA0,115200 kgdboc=ttyAMA0,115200  (non dovrebbe essere presente perchè all'inizio abbiamo configurato con raspi-config)
+dopo essere usciti con CTRL X
+         
+reboot
+
+sudo chmod a+rw /dev/ttyAMA0
+
+sudo nano /etc/zabbix/zabbix_server.conf
+allinterno impostare le seguenti voci
+DBName=zabbix
+DBUser=zabbix
+DBPassword=mettiquilapassword
+
+salvare e uscire 
+cd /usr/share/zabbix-server-mysql/
+sudo gunzip *.gz
+mysql -u root -p
+digitare la password e procediamo nel dare i comandi sql
+
+create user 'zabbix'@'localhost' identified by 'mettiquilapassword';
+create database zabbix;
+grant all privileges on zabbix.* to 'zabbix'@'localhost';
+flush privileges;
+exit;
+
+mysql -u zabbix -p zabbix < schema.sql
+dopo avere digitato la password e dato invio il raspberry sembrerà piantato ma nn è così ci vuole almeno un paio di minuti per eseguire questo comando
+perchè stà creando le tavole in zabbix si può vedere che stà lavoranto tramite phpmyadmin
+mi raccomando non bloccarlo
+(nel caso lo avete bloccato voi, aprite mysql e date il comando drop database zabbix; e ripartite da create database zabbix;
+ora continuiamo con i prossimi comandi
+
+mysql -u zabbix -p zabbix < images.sql
+
+mysql -u zabbix -p zabbix < data.sql
+
+sudo cp /usr/share/doc/zabbix-frontend-php/examples/zabbix.conf.php.example /etc/zabbix/zabbix.conf.php
+sudo nano /etc/zabbix/zabbix.conf.php
+ed impostare come sotto
+$DB['DATABASE'] = 'zabbix'
+$DB['USER'] = 'zabbix'
+$DB['PASSWORD'] = 'mettilatuapasswordqui'
+
+ora salviamo con CTRL O invio e usciamo CTRL X
+
+sudo cp /usr/share/doc/zabbix-frontend-php/examples/apache.conf /etc/apache2/conf-available/zabbix.conf
+sudo a2enconf zabbix.conf
+sudo a2enmod alias
+sudo service apache2 restart
+sudo nano /etc/default/zabbix-server
+modificare START=no in START=yes  salvare e uscire
+
+sudo service zabbix-server start
+sudo nano /etc/apache2/sites-available/000-default.conf
+
+And set the "DocumentRoot" like this;
+
+commentare la linea con #
+#DocumentRoot /var/www/html
+ed aggiungere subito sotto la linea
+DocumentRoot /usr/share/zabbix
+
+salvare e uscire come abbiamo imparato.
+
+sudo apt-get update
+
+poi dal browser digita il tuo indirizzo ip     xxx.xxx.xxx.xxx/zabbix
+entra con admin password zabbix
+cambiare subito la password dell'amministratore  admin che è zabbix
+cliccando su administration sottomenù users
+nella colonna members cliccare su Admin (Zabbix Administrator) 
+cliccare su change password e digitare la nuova password negli appositi spazi ripetendola due volte come richiesto.
+
+torniamo alla finestra terminale 
+come utente pi nella cartella /home/pi
+cd /home/pi
+verificare con 
+pwd
+risponde /home/pi
+
+in mobaxterm cliccare in alto sul'icona upload current folder selezionare dal propio pc SP5000.py
+e confermare
+dare dal terminale
+ls -l
+risponde
+totale 44
+drwxr-xr-x 2 pi pi 4096 nov 21 22:31 Desktop
+drwxr-xr-x 5 pi pi 4096 nov 21 22:31 Documents
+drwxr-xr-x 2 pi pi 4096 nov 21 22:36 Downloads
+drwxr-xr-x 2 pi pi 4096 nov 21 22:36 Music
+drwxr-xr-x 2 pi pi 4096 nov 21 22:36 Pictures
+drwxr-xr-x 2 pi pi 4096 nov 21 22:36 Public
+drwxr-xr-x 2 pi pi 4096 nov 21 22:31 python_games
+-rw-r--r-- 1 pi pi 7019 dic 12 09:38 SP5000.py
+drwxr-xr-x 2 pi pi 4096 nov 21 22:36 Templates
+drwxr-xr-x 2 pi pi 4096 nov 21 22:36 Videos
+
+possiamo vedere che il file è stato inserito
+sudo nano /etc/zabbix/zabbix_server.conf
+cercare nel file
+
+### Option: ExternalScripts
+#       Full path to location of external scripts.
+#       Default depends on compilation options.
+#
+# Mandatory: no
+# Default:
+# ExternalScripts=${datadir}/zabbix/externalscripts
+
+aggiungiamo una riga subito sotto (non sono riuscito a capire dove punta ${datadir} allora ho scritto il path assoluto così funziona)
+
+ExternalScripts=/etc/zabbix/externalscripts
+
+salviamo e usciamo
+
+creiamo la cartella
+sudo mkdir /etc/zabbix/externalscripts
+
+per permettere a zabbix di creare dei file dentro questa cartella (ci servirà per inserire dei comandi da zabbix)
+sudo chown zabbix:root /etc/zabbix/externalscripts
+
+e creiamo lo script
+sudo nano /etc/zabbix/externalscripts/GetData
+
+all'interno inseriamo le due righe
+
+#!/bin/bash
+grep $1: /tmp/sp5000out |awk -F ":" '{print $2}'
+
+attenzione se usate da windows il copia incolla perchè inserisce un carattere non visibile del ritorno carrello
+per evitare questo cancellare a fine riga l'ultimo carattere e reinserire il ritorno carrello mentre siete in editazione con nano.
+
+salviamo 
+diamo il comando 
+ls -l
+che risponderà a video
+pi@raspberrypi:~ $ ls -l /etc/zabbix/externalscripts
+totale 4
+-rw-r--r-- 1 root root 62 dic 12 10:07 GetData
+pi@raspberrypi:~ $
+
+possiamo vedere dagli attributi che non è eseguibile allora diamo il comando
+
+sudo chmod +x /etc/zabbix/externalscripts/GetData
+
+ls -l /etc/zabbix/externalscripts
+dovrebbe restituire
+-rwxr-xr-x 1 root root 62 dic 12 10:07 GetData
+notare le x aggiunte ad indicare che è eseguibile.
+sudo reboot 
+oppure fare rileggere la configurazione con
+sudo zabbix_server -c /etc/zabbix/zabbix_server.conf -R config_cache_reload 
+
+sudo chown zabbix:zabbix /etc/zabbix/externalscripts/GetData
+
+cd
+andiamo su mobaterm e upload di leggiinverter
+il file leggiinverter contiene le seguenti righe
+
+#!/bin/bash
+cd /home/pi
+while true
+do
+  echo $(date)
+  echo Running SP5000 Daemon
+  /usr/bin/python2 /home/pi/SP5000.py
+  echo Died
+done
+poi dalla finestra terminale
+sudo mv ./leggiinverter /usr/sbin/leggiinverter
+
+poi lo facciamo diventare di proprietà di root (potrebbe non servire da verificare)
+
+sudo chown root:root /usr/sbin/leggiinverter
+
+cd /etc/init.d
+sudo cp ./skeleton ./demoneinverter
+sudo nano ./demoneinverter
+
+nel file ./demoneinverter cambio le ultime due righe
+
+DESC="Demone Inverter"
+DAEMON=/usr/sbin/leggiinverter
+salvo esco e rendo eseguibile con il comando
+
+sudo chmod +x ./demoneinverter
+
+sudo systemctl enable demoneinverter
+sudo update-rc.d demoneinverter defaults 
+
+avvio il demone
+sudo -s
+service demoneinverter start
+
+controllo se si è avviato
+systemctl status demoneinverter
+
+risponde questo
+? demoneinverter.service - LSB: Example initscript
+Loaded: loaded (/etc/init.d/demoneinverter)
+Active: active (exited) since lun 2015-11-02 21:08:55 UTC; 10s ago
+Process: 23860 ExecStart=/etc/init.d/demoneinverter start (code=exited, status=0/SUCCESS)
+
+ora abilito il servizio al boot
+systemctl enable demoneinverter
+reboot
+sudo ps -a
+vedo solo il processo sudo e il processo ps
+
+provo a vedere se il file in /tmp si aggiorna
+ls -l /tmp
+
+perfetto ora si aggiorna anche con il terminale scollegato. 
+
+apriamo sul browser zabbix
+Prima di importare i files fai come segue:
+Seleziona Administrators, poi General
+Sulla DX seleziona nella combobox dove vi è scritto GUI bisogna cambiare in Value Mappings 
+
+Clicca su Create Value Mapping 
+in Name scrivere Inverter Fault
+in Mappings creare due righe
+    Value 0 Mapped to Normal
+    Value 1 Mapped to Fault
+clicca su SAVE (mi raccomando ci devono essere solo le due righe e non la terza riga vuota eventualmente rimuoverla con Remove
+
+Clicca su Create Value Mapping 
+in Name scrivere Inverter Mode
+in Mappings creare due righe
+    Value 0 Mapped to Off
+    Value 1 Mapped to On
+clicca su SAVE
+
+andiamo su configuration e poi su hosts e in alto a destra clicchiamo su import poi sfoglia e selezioniamo il file zbx_export_hosts_v2.xml
+andiamo su configuration e poi su screens e in alto a destra clicchiamo su import poi sfoglia e selezioniamo il file zbx_export_screens_v2.xml
+
+
+
+esempio di custom script in zabbix per inviare i comandi
+echo "PCP00" >> /etc/zabbix/externalscripts/comandi_tx 
+
+
+
+NOTE:
+in /tmp si trovano i due file che vengono rigenerati automaticamente
+il SERIALLOCK
+ed il sp5000out
+con ls -l si può vedere l'ora in cui sono stati creati per capire se lo script stà girando.
+con cat /tmp/sp5000out visualizzo il contenuto del file
+
+per prova si può vedere se l'utente zabbix può accedere allo script GetData
+sudo -u zabbix /etc/zabbix/externalscripts/GetData "battery_voltage"
+dovrebbe restituire il valore della tensione di batteria
+
