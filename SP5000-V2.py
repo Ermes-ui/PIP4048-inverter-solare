@@ -100,8 +100,9 @@ class Inverter:
 
 	def Update(self):
 		CMD = self.QueryCMD("QPIGS")
-		if(CMD == -1):
-			return -1
+		if(CMD == -1  or CMD == "(NAK" ):  #CMD == "(NAK" serve per evitare che il programma si blocchi quando l'inverter risponde con una stringa sbagliata
+            print "eccolo"
+            return -1
 		all = string.split(CMD[1:])
 		self.grid_voltage = float(all[0])
 		self.grid_frequency = float(all[1])
@@ -154,31 +155,6 @@ class Inverter:
 sp5000 = Inverter("/dev/ttyUSB0")
 while True:
     if (sp5000.Update() == 0):
-        #out_file = open("/tmp/sp5000out_B","w")
-        #out_file.write("grid_voltage:"+str(sp5000.grid_voltage)+"\n")
-        #out_file.write("grid_frequency:"+str(sp5000.grid_frequency)+"\n")
-        #out_file.write("ac_output_voltage:"+str(sp5000.ac_output_voltage)+"\n")
-        #out_file.write("ac_output_frequency:"+str(sp5000.ac_output_frequency)+"\n")
-        #out_file.write("ac_output_apparent_power:"+str(sp5000.ac_output_apparent_power)+"\n")
-        #out_file.write("ac_output_active_power:"+str(sp5000.ac_output_active_power)+"\n")
-        #out_file.write("output_load_percent:"+str(sp5000.output_load_percent)+"\n")
-        #out_file.write("bus_voltage:"+str(sp5000.bus_voltage)+"\n")
-        #out_file.write("battery_voltage:"+str(sp5000.battery_voltage)+"\n")
-        #out_file.write("battery_charging_current:"+str(sp5000.battery_charging_current)+"\n")
-        #out_file.write("battery_capacity:"+str(sp5000.battery_capacity)+"\n")
-        #out_file.write("heatsink_temperature:"+str(sp5000.heatsink_temperature)+"\n")
-        #out_file.write("pv_current:"+str(sp5000.pv_current)+"\n")
-        #out_file.write("pv_voltage:"+str(sp5000.pv_voltage)+"\n")
-        #out_file.write("battery_voltage_scc:"+str(sp5000.battery_voltage_scc)+"\n")
-        #out_file.write("battery_discharge_current:"+str(sp5000.battery_discharge_current)+"\n")
-        #out_file.write("isLineMode:"+str(sp5000.isLineMode)+"\n")
-        #out_file.write("isBatteryMode:"+str(sp5000.isBatteryMode)+"\n")
-        #out_file.write("inverter_fault:"+str(sp5000.inverter_fault)+"\n")
-        #out_file.write("BusOvervolt:"+str(sp5000.BusOvervolt)+"\n")
-        #out_file.write("BusUndervolt:"+str(sp5000.BusUndervolt)+"\n")
-        #out_file.write("SoftStartFail:"+str(sp5000.SoftStartFail)+"\n")
-        #out_file.write("LineFail:"+str(sp5000.LineFail)+"\n")
-        #out_file.write("PvShort:"+str(sp5000.PvShort)+"\n")
 
         mydata = '{"state":' + str(sp5000.grid_voltage) + ', "attributes": {"unit_of_measurement": "V", "friendly_name": "grid_voltage"}}'
         response = post(url + "sensor.solar1", headers=headers,data =mydata)
@@ -194,7 +170,7 @@ while True:
         response = post(url + "sensor.solar6", headers=headers,data =mydata)
         mydata = '{"state":' + str(sp5000.output_load_percent) + ', "attributes": {"unit_of_measurement": "%", "friendly_name": "output_load_percent"}}'
         response = post(url + "sensor.solar7", headers=headers,data =mydata)
-        mydata = '{"state":' + str(sp5000.bus_voltage)) + ', "attributes": {"unit_of_measurement": "V", "friendly_name": "bus_voltage"}}'
+        mydata = '{"state":' + str(sp5000.bus_voltage) + ', "attributes": {"unit_of_measurement": "V", "friendly_name": "bus_voltage"}}'
         response = post(url + "sensor.solar8", headers=headers,data =mydata)
         mydata = '{"state":' + str(sp5000.battery_voltage) + ', "attributes": {"unit_of_measurement": "V", "friendly_name": "battery_voltage"}}'
         response = post(url + "sensor.solar9", headers=headers,data =mydata)
@@ -202,7 +178,7 @@ while True:
         response = post(url + "sensor.solar10", headers=headers,data =mydata)
         mydata = '{"state":' + str(sp5000.battery_capacity) + ', "attributes": {"unit_of_measurement": "%", "friendly_name": "battery_capacity"}}'
         response = post(url + "sensor.solar11", headers=headers,data =mydata)
-        mydata = '{"state":' + str(sp5000.heatsink_temperature) + ', "attributes": {"unit_of_measurement": "°C", "friendly_name": "heatsink_temperature"}}'
+        mydata = '{"state":' + str(sp5000.heatsink_temperature) + ', "attributes": {"unit_of_measurement": + chr(176) + "C", "friendly_name": "heatsink_temperature"}}'
         response = post(url + "sensor.solar12", headers=headers,data =mydata)
         mydata = '{"state":' + str(sp5000.pv_current) + ', "attributes": {"unit_of_measurement": "A", "friendly_name": "pv_current"}}'
         response = post(url + "sensor.solar13", headers=headers,data =mydata)
@@ -239,11 +215,4 @@ while True:
         mydata = '{"state":' + str(sp5000.BatteryVoltLow) + ', "attributes": {"unit_of_measurement": "", "friendly_name": "BatteryVoltLow"}}'
         response = post(url + "sensor.solar29", headers=headers,data =mydata)
 
-        #out_file.write("InvVoltLow:"+str(sp5000.InvVoltLow)+"\n")
-        #out_file.write("InvVolrHigh:"+str(sp5000.InvVolrHigh)+"\n")
-        #out_file.write("OverTemp:"+str(sp5000.OverTemp)+"\n")
-        #out_file.write("BatteryVoltHigh:"+str(sp5000.BatteryVoltHigh)+"\n")
-        #out_file.write("BatteryVoltLow:"+str(sp5000.BatteryVoltLow)+"\n")
-        #out_file.close()
-        #shutil.move("/tmp/sp5000out_B","/tmp/sp5000out")
         time.sleep(3)
