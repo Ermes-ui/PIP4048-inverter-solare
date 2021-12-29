@@ -1,3 +1,7 @@
+from __future__ import print_function
+from builtins import str
+from builtins import range
+from builtins import object
 import serial, time
 import struct, string
 import shutil
@@ -6,57 +10,62 @@ from ctypes import c_ubyte, c_ushort
 
 def CalcoloCRC( str ):
 
-	crc_ta = [ 0x0000, 0x1021, 0x2042, 0x3063, 0x4084, 0x50a5, 0x60c6, 0x70e7, \
+        crc_ta = [ 0x0000, 0x1021, 0x2042, 0x3063, 0x4084, 0x50a5, 0x60c6, 0x70e7, \
                      0x8108, 0x9129, 0xa14a, 0xb16b, 0xc18c, 0xd1ad, 0xe1ce, 0xf1ef ]
 
-	lunghezza = len(str)
+        lunghezza = len(str)
 
-	Calcolo = list(str)
+        Calcolo = list(str)
 
-	crc = 0
+        crc = 0
+        print ("lung" + lunghezza)
+        print ("cal" + Calcolo)
+        for idx in range(0,lunghezza):
+                da=c_ubyte((c_ubyte(crc>>8).value)>>4).value
+                crc = c_ushort(crc << 4).value
+                crc = c_ushort(crc ^ crc_ta[da^c_ubyte(c_ubyte(ord(Calcolo[idx])).value >> 4).value]).value
+                da = (c_ubyte(crc>>8).value) >> 4
+                crc <<= 4
+                crc = c_ushort(crc ^ crc_ta[ da ^ ( ord(Calcolo[idx]) & 0x0f )]).value
 
-	for idx in range(0,lunghezza):
-		da=c_ubyte((c_ubyte(crc>>8).value)>>4).value
-		crc = c_ushort(crc << 4).value
-		crc = c_ushort(crc ^ crc_ta[da^c_ubyte(c_ubyte(ord(Calcolo[idx])).value >> 4).value]).value
-		da = (c_ubyte(crc>>8).value) >> 4
-		crc <<= 4
-		crc = c_ushort(crc ^ crc_ta[ da ^ ( ord(Calcolo[idx]) & 0x0f )]).value
+        bCRCLow = c_ubyte(crc).value
+        bCRCHign = c_ubyte(crc>>8).value
 
-	bCRCLow = c_ubyte(crc).value
-	bCRCHign = c_ubyte(crc>>8).value
+        if ( bCRCLow==0x28 or bCRCLow==0x0d or bCRCLow==0x0a ):
+                bCRCLow += 1
 
-	if ( bCRCLow==0x28 or bCRCLow==0x0d or bCRCLow==0x0a ):
-		bCRCLow += 1
+        if ( bCRCHign==0x28 or bCRCHign==0x0d or bCRCHign==0x0a ):
+                bCRCHign += 1
 
-	if ( bCRCHign==0x28 or bCRCHign==0x0d or bCRCHign==0x0a ):
-		bCRCHign += 1
+        crc = c_ushort(bCRCHign).value << 8
+        crc += bCRCLow;
+        return crc
 
-	crc = c_ushort(bCRCHign).value << 8
-	crc += bCRCLow;
-	return crc
+class Inverter(object):
+        def __init__(self,serialport):
 
-class Inverter:
-	def __init__(self,serialport):
+                self.ser = serial.Serial()
+                self.ser.port = serialport
+                self.ser.baudrate = 2400
+                self.ser.bytesize = serial.EIGHTBITS    #number of bits per bytes
+                self.ser.parity = serial.PARITY_NONE    #set parity check: no parity
+                self.ser.stopbits = serial.STOPBITS_ONE #number of stop bits
+                self.ser.timeout = 1                    #non-block read
+                self.ser.xonxoff = False                #disable software flow control
+                self.ser.rtscts = False                 #disable hardware (RTS/CTS) flow control
+                self.ser.dsrdtr = False                 #disable hardware (DSR/DTR) flow control
+                self.ser.writeTimeout = 2               #timeout for write
 
-		self.ser = serial.Serial()
-		self.ser.port = serialport
-		self.ser.baudrate = 2400
-		self.ser.bytesize = serial.EIGHTBITS    #number of bits per bytes
-		self.ser.parity = serial.PARITY_NONE    #set parity check: no parity
-		self.ser.stopbits = serial.STOPBITS_ONE #number of stop bits
-		self.ser.timeout = 1                    #non-block read
-		self.ser.xonxoff = False                #disable software flow control
-		self.ser.rtscts = False                 #disable hardware (RTS/CTS) flow control
-		self.ser.dsrdtr = False                 #disable hardware (DSR/DTR) flow control
-		self.ser.writeTimeout = 2               #timeout for write
+                try:
+                    self.ser.open()
 
-		try:
-		    self.ser.open()
+                except Exception as e:
+                    print ("e" + e)
+                    print ("error open serial port: " + str(e))
+                    exit()
 
-		except Exception, e:
-		    print "error open serial port: " + str(e)
-		    exit()
+                if self.ser.isOpen():
+#                       print (self.ser.isOpen())
 
 		if self.ser.isOpen():
 			try:
@@ -83,6 +92,7 @@ class Inverter:
 
 	def Update(self):
 		CMD = self.QueryCMD("QPIGS")
+		print "QPIGS", CMD
 		if(CMD == -1):
 			return -1
 		all = string.split(CMD[1:])
