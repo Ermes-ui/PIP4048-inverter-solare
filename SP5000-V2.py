@@ -158,26 +158,28 @@ sp5000 = Inverter("/dev/ttyUSB0")
 while True:
 	if (sp5000.Update() == 0):
 		out_file = open("/tmp/sp5000out_B","w")
-#		out_file.write("grid_voltage:"+str(sp5000.grid_voltage)+"\n")
-
-		mydata = '{"state":' + str(sp5000.grid_voltage) + ', "attributes": {"unit_of_measurement": "V", "friendly_name": "grid_voltage"}}'
-		response = post(url + "sensor.solar1", headers=headers,data =mydata)
-                mydata = '{"state":' + str(sp5000.grid_frequency) + ', "attributes": {"unit_of_measurement": "Hz", "friendly_name": "grid_frequency"}}'
-                response = post(url + "sensor.solar2", headers=headers,data =mydata)
-                mydata = '{"state":' + str(sp5000.ac_output_voltage) + ', "attributes": {"unit_of_measurement": "V", "friendly_name": "ac_output_voltage"}}'
-                response = post(url + "sensor.solar3", headers=headers,data =mydata)
-                mydata = '{"state":' + str(sp5000.ac_output_frequency) + ', "attributes": {"unit_of_measurement": "Hz", "friendly_name": "ac_output_frequency"}}'
-                response = post(url + "sensor.solar4", headers=headers,data =mydata)
-                mydata = '{"state":' + str(sp5000.ac_output_apparent_power) + ', "attributes": {"unit_of_measurement": "W", "friendly_name": "ac_output_apparent_power"}}'
-                response = post(url + "sensor.solar5", headers=headers,data =mydata)
-                mydata = '{"state":' + str(sp5000.ac_output_active_power) + ', "attributes": {"unit_of_measurement": "W", "friendly_name": "ac_output_active_power"}}'
-                response = post(url + "sensor.solar6", headers=headers,data =mydata)
+		#out_file.write("grid_voltage:"+str(sp5000.grid_voltage)+"\n")
 		#out_file.write("grid_frequency:"+str(sp5000.grid_frequency)+"\n")
 		#out_file.write("ac_output_voltage:"+str(sp5000.ac_output_voltage)+"\n")
-	        #out_file.write("ac_output_frequency:"+str(sp5000.ac_output_frequency)+"\n")
+	    #out_file.write("ac_output_frequency:"+str(sp5000.ac_output_frequency)+"\n")
 		#out_file.write("ac_output_apparent_power:"+str(sp5000.ac_output_apparent_power)+"\n")
 		#out_file.write("ac_output_active_power:"+str(sp5000.ac_output_active_power)+"\n")
-		out_file.write("output_load_percent:"+str(sp5000.output_load_percent)+"\n")
+        mydata = '{"state":' + str(sp5000.grid_voltage) + ', "attributes": {"unit_of_measurement": "V", "friendly_name": "grid_voltage"}}'
+		response = post(url + "sensor.solar1", headers=headers,data =mydata)
+        mydata = '{"state":' + str(sp5000.grid_frequency) + ', "attributes": {"unit_of_measurement": "Hz", "friendly_name": "grid_frequency"}}'
+        response = post(url + "sensor.solar2", headers=headers,data =mydata)
+        mydata = '{"state":' + str(sp5000.ac_output_voltage) + ', "attributes": {"unit_of_measurement": "V", "friendly_name": "ac_output_voltage"}}'
+        response = post(url + "sensor.solar3", headers=headers,data =mydata)
+        mydata = '{"state":' + str(sp5000.ac_output_frequency) + ', "attributes": {"unit_of_measurement": "Hz", "friendly_name": "ac_output_frequency"}}'
+        response = post(url + "sensor.solar4", headers=headers,data =mydata)
+        mydata = '{"state":' + str(sp5000.ac_output_apparent_power) + ', "attributes": {"unit_of_measurement": "W", "friendly_name": "ac_output_apparent_power"}}'
+        response = post(url + "sensor.solar5", headers=headers,data =mydata)
+        mydata = '{"state":' + str(sp5000.ac_output_active_power) + ', "attributes": {"unit_of_measurement": "W", "friendly_name": "ac_output_active_power"}}'
+        response = post(url + "sensor.solar6", headers=headers,data =mydata)
+        mydata = '{"state":' + str(sp5000.output_load_percent) + ', "attributes": {"unit_of_measurement": "%", "friendly_name": "output_load_percent"}}'
+        response = post(url + "sensor.solar7", headers=headers,data =mydata)
+
+		#out_file.write("output_load_percent:"+str(sp5000.output_load_percent)+"\n")
 		out_file.write("bus_voltage:"+str(sp5000.bus_voltage)+"\n")
 		out_file.write("battery_voltage:"+str(sp5000.battery_voltage)+"\n")
 		out_file.write("battery_charging_current:"+str(sp5000.battery_charging_current)+"\n")
