@@ -26,22 +26,22 @@ https://funprojects.blog/2020/12/12/home-assistant-rest-api/ 
 In Home Assistant ho aggiunto la riga “api:” al file di configurazione config.yaml come da https://www.home-assistant.io/integrations/api/
 
 Per testare il funzionamento dell’integrazione “api” uso questo funzione da terminale mac avendo l’accortezza di cambiare il token con quello effettivo
-
+```
 curl -X GET -H "Authorization: Bearer eyJ0eXAiOiJKV1Qi…….4VhclYQ6ufcw" http://192.168.1.146:8123/api/
 Se funziona risponde: {"message": "API running."}
-
+```
 Per leggere un valore da Home Assistant si usa questa cambiando il sensore con uno presente in HA:
-
+```
 curl -X GET -H "Authorization: Bearer eyJ0eXAiOiJKV1Qi…..42Y4VhclYQ6ufcw" http://192.168.1.146:8123/api/states/sensor.ble_battery_a4c138d7da8f
-
+```
 Per scrivere su HA si usa questa, su Home Assistant troveremo un’entita chiamata sensor.myinput1:
-
+```
 curl -X POST \
    -H "Authorization: Bearer eyJ0eXAiOiJKV1Qi….42Y4VhclYQ6ufcw" \
    -H "Content-Type: application/json" \
    -d '{"state":"88.6", "attributes": {"unit_of_measurement": "%", "friendly_name": "Remote Input 1"}}' \
    http://192.168.1.146:8123/api/states/sensor.myinput1
-
+```
 A questo punto devo trovarmi tra le entità di Home Assistant i vari sensori solar..
 
 <h3>Istruzione per scaricare da GitHub</h3>
